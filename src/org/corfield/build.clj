@@ -322,9 +322,7 @@
 
   User `deps.edn` (linked to Practicalli) is also included for additional aliases."
   [{:keys [java-cmd java-opts jvm-opts main main-args main-opts additional-aliases] :as opts} aliases]
-  (println "additional-aliases=" additional-aliases)
   (let [final-aliases (into aliases additional-aliases)
-        _ (println "final-aliases" final-aliases)
         task     (str/join ", " (map name final-aliases))
         _        (println "\nRunning task for:" task)
         basis    (b/create-basis {:user (str (System/getenv "XDG_CONFIG_HOME") "/clojure/deps.edn")
@@ -363,7 +361,6 @@
       (run-task [:test/kaocha])))
 
 (defn test-watch "Run the tests and watch. The kaocha cloverage plugin cannot be used here." [opts]
-  (println "opts=" opts)
   (-> opts
       (print-doc #'test-watch)
       (run-task [:test/kaocha-watch])))
