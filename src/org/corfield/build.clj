@@ -64,7 +64,9 @@
               defaulted as noted above and the latter defaulted
               to [\"resources\"] just for the copying but otherwise
               has no default (for `tools.build/write-pom`)."
-  (:require [clojure.java.io :as io]
+  (:refer-clojure :exclude [test])
+  (:require [cawdy.core :as cawdy]
+            [clojure.java.io :as io]
             [clojure.string :as str]
             [clojure.tools.build.api :as b]
             [clojure.tools.deps.alpha :as t]
@@ -169,7 +171,7 @@
                                (or resource-dirs ["resources"])))
            :uber-file  (or    uber-file   xxx-file))))
 
-(defn jar
+(defn _jar
   "Build the library JAR file.
 
   Requires: :lib, :version
@@ -214,7 +216,7 @@
       java-cmd
       "java")))
 
-(defn uber
+(defn _uber
   "Build the application uber JAR file.
 
   Requires: :lib or :uber-file
@@ -259,7 +261,7 @@
     (b/uber opts))
   opts)
 
-(defn install
+(defn _install
   "Install the JAR to the local Maven repo cache.
 
   Requires: :lib, :version
@@ -279,7 +281,7 @@
                 :class-dir  (default-class-dir class-dir target)})
     opts))
 
-(defn deploy
+(defn _deploy
   "Deploy the JAR to Clojars.
 
   Requires: :lib, :version
@@ -312,12 +314,23 @@
   "Run a task based on aliases.
 
   If :main-args is not provided and no :main-opts are found
-  in the aliases, default to the Cognitect Labs' test-runner."
-  [{:keys [java-cmd java-opts jvm-opts main main-args main-opts] :as opts} aliases]
-  (let [task     (str/join ", " (map name aliases))
+  in the aliases, default to the Cognitect Labs' test-runner.
+
+  `additional-aliases` can be passed and they'll be merged to the ones of the task.
+  The dev alias is not added when using something like:
+  `clojure -T:dev:build org.corfield.build/xxx`
+
+  User `deps.edn` (linked to Practicalli) is also included for additional aliases."
+  [{:keys [java-cmd java-opts jvm-opts main main-args main-opts additional-aliases] :as opts} aliases]
+  (println "additional-aliases=" additional-aliases)
+  (let [final-aliases (into aliases additional-aliases)
+        _ (println "final-aliases" final-aliases)
+        task     (str/join ", " (map name final-aliases))
         _        (println "\nRunning task for:" task)
-        basis    (b/create-basis {:aliases aliases})
-        combined (t/combine-aliases basis aliases)
+        basis    (b/create-basis {:user (str (System/getenv "XDG_CONFIG_HOME") "/clojure/deps.edn")
+                                  :project "deps.edn"
+                                  :aliases final-aliases})
+        combined (t/combine-aliases basis final-aliases)
         cmds     (b/java-command
                   {:basis     basis
                    :java-cmd  (or java-cmd (find-java))
@@ -339,3 +352,110 @@
   Always adds :test to the aliases."
   [{:keys [aliases] :as opts}]
   (-> opts (run-task (into [:test] aliases))))
+
+(defn print-doc [opts fn]
+  (println (->> fn meta :doc str/split-lines (map str/trim) (str/join \newline)))
+  opts)
+
+(defn test "Run the tests. The kaocha cloverage plugin will be triggered if set in `tests.edn`." [opts]
+  (-> opts
+      (print-doc #'test)
+      (run-task [:test/kaocha])))
+
+(defn test-watch "Run the tests and watch. The kaocha cloverage plugin cannot be used here." [opts]
+  (println "opts=" opts)
+  (-> opts
+      (print-doc #'test-watch)
+      (run-task [:test/kaocha-watch])))
+
+(defn eastwood "Run Eastwood." [opts]
+  (-> opts
+      (print-doc #'eastwood)
+      (run-task [:lint/eastwood])))
+
+(defn coverage "Run the code coverage" [opts]
+  (-> opts
+      (print-doc #'coverage)
+      (run-task [:test/cloverage])))
+
+(defn jar "Build the JAR" [opts]
+  (-> opts
+      (clean)
+      (print-doc #'jar)
+      (_jar)))
+
+(defn uber "Build the uber JAR." [opts]
+  (-> opts
+      (assoc :main (:main-ns opts)
+             :uber-file (format "target/%s-%s-standalone.jar" (name (:lib opts)) (:version opts)))
+      (dissoc :lib) ;; otherwise uberfile is not named correctly
+      (print-doc #'uber)
+      (_uber)))
+
+(defn install "Install the JAR locally." [opts]
+  (-> opts
+      jar
+      (print-doc #'install)
+      (_install)))
+
+(defn ci "Run the full CI pipeline." [opts]
+  (-> opts
+      (print-doc #'ci)
+      (test)
+      (jar)
+      (_install)
+      (uber)))
+
+(defn deploy "Deploy the JAR to Clojars." [opts]
+  (-> opts
+      (jar)
+      (print-doc #'deploy)
+      (_deploy)))
+
+(defn codox
+  "TODO replace/complete by funcool/codeina ? or autodoc?"
+  [opts]
+  (let [basis (b/create-basis {:extra '{:deps {codox/codox {:mvn/version "0.10.8"}
+                                               codox-theme-rdash/codox-theme-rdash {:mvn/version "0.1.2"}}}
+                               ;; This is needed because some of the namespaces
+                               ;; rely on optional dependencies provided by :dev
+                               :aliases [:dev]})
+        expression `(do
+                      ((requiring-resolve 'codox.main/generate-docs)
+                       {:metadata {:doc/format :markdown}
+                        :themes [:rdash]
+                        :source-paths  ["src"]
+                        :output-path "doc"
+                        :name ~(str (:lib opts))
+                        :version ~(:version opts)
+                        :description "@todo description"})
+                      nil)
+        process-params (b/java-command
+                        {:basis basis
+                         :main "clojure.main"
+                         :main-args ["--eval" (pr-str expression)]})]
+    (b/process process-params))
+  opts)
+
+(defn caddy
+  "View the codox documentation in a browser.
+   Run caddy server in a separate shell:
+   `/usr/bin/caddy start --config $CLJ/build-clj/resources/Caddyfile`
+   Launch this build task: `clojure_caddy <specific/path>`
+   Then go to <https://localhost:2015>."
+  [{:keys [caddy-path] :or {caddy-path "doc"} :as opts}]
+  (print-doc opts #'caddy)
+  ;; add server and route
+  (let [conn (cawdy/connect "http://localhost:2019")]
+    (cawdy/create-server conn :project-documentation
+                         {:listen [":2015"]
+                          :automatic_https {:disable false}})
+    (cawdy/add-route conn
+                     :project-documentation "localhost"
+                     :files {:root (.getAbsolutePath (io/file caddy-path))})
+    (println "Please enjoy documentation at https://localhost:2015")))
+
+(comment
+  (let [conn (cawdy/connect "http://localhost:2019")]
+    (cawdy/config conn)
+    (cawdy/clean-config conn)))
