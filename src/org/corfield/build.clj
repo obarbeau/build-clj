@@ -437,7 +437,7 @@
 (defn caddy
   "View the codox documentation in a browser.
    Run caddy server in a separate shell:
-   `/usr/bin/caddy start --config $CLJ/build-clj/resources/Caddyfile`
+   `/usr/bin/caddy start --config $CLJ/tools/build-clj/resources/Caddyfile`
    Launch this build task: `clojure_caddy <specific/path>`
    Then go to <https://localhost:2015>."
   [{:keys [caddy-path] :or {caddy-path "doc"} :as opts}]
