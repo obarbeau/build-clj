@@ -1,6 +1,6 @@
 {:deps
  {cawdy/cawdy {:mvn/version "0.3.1"}
-  io.github.clojure/tools.build {:git/tag "v0.8.5" :git/sha "9c738da"}
+  io.github.clojure/tools.build {:git/tag "v0.9.0" :git/sha "8c93e0c"}
   io.github.seancorfield/build-uber-log4j2-handler {:git/tag "v0.1.5" :git/sha "55fb6f6"}
   slipset/deps-deploy {:mvn/version "0.2.0"}}
  :aliases {;; do not add aliases that are already present in `practicalli/clojure-deps-edn/deps.edn`
