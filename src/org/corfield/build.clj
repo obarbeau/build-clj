@@ -413,7 +413,7 @@
                        {:metadata {:doc/format :markdown}
                         :themes [:rdash]
                         :source-paths  ["src"]
-                        :output-path "doc"
+                        :output-path "codox"
                         :name ~(str (:lib opts))
                         :version ~(:version opts)
                         :description "@todo description"})
@@ -431,7 +431,7 @@
    `/usr/bin/caddy start --config $CLJ/tools/build-clj/resources/Caddyfile`
    Launch this build task: `clojure_caddy <specific/path>`
    Then go to <https://localhost:2015>."
-  [{:keys [caddy-path] :or {caddy-path "doc"} :as opts}]
+  [{:keys [caddy-path] :or {caddy-path "codox"} :as opts}]
   (print-doc opts #'caddy)
   ;; add server and route
   (let [conn (cawdy/connect "http://localhost:2019")]
