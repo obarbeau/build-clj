@@ -6,7 +6,7 @@ Having implemented `build.clj` (using `tools.build`) in several of my open sourc
 I found there was a lot of repetition across them, so I factored out
 the common functionality into this library.
 
-**Caution: this wrapper has outgrown its original goal (of being a simple wrapper to eliminate boilerplate) and has far more knobs and dials than I intended, so I would strongly advise you learn to use raw `tools.build` instead for anything beyond the simplest build script needs!**
+**Caution: this wrapper has outgrown its original goal (of being a simple wrapper to eliminate boilerplate) and has far more knobs and dials than I intended, so I am deprecating it -- you should learn to use raw `tools.build` instead!**
 
 ## Use with `build.clj`
 
@@ -16,7 +16,7 @@ your `:build` alias can just be:
 
 ```clojure
   :build {:deps {io.github.seancorfield/build-clj
-                 {:git/tag "v0.9.0" :git/sha "d758807"}}
+                 {:git/tag "v0.9.2" :git/sha "9c9f078"}}
           :ns-default build}
 ```
 
@@ -39,7 +39,7 @@ not building JAR files at all) -- then you can specify a "slim" entry point to
 
 ```clojure
   :build {:deps {io.github.seancorfield/build-clj
-                 {:git/tag "v0.9.0" :git/sha "d758807"
+                 {:git/tag "v0.9.2" :git/sha "9c9f078"
                   ;; omits deps-deploy dependency:
                   :deps/root "slim"}}
           :ns-default build}
@@ -304,15 +304,6 @@ generating the `pom.xml` and will also copy all folders found on the classpath -
 of the `src` and `resources` folders from those local source subprojects.
 
 > Note: git dependencies look like local source subprojects so they will also be included if you specify `:transitive true` -- but your `pom.xml` will not contain those dependencies anyway so users of your library JAR would have a time if git folders are not copied into the JAR!
-
-## Projects Using `build-clj`
-
-You can see how `build-clj` is used to reduce boilerplate in the
-`build.clj` file of the following projects:
-
-* [`expectations`](https://github.com/clojure-expectations/clojure-test/blob/develop/build.clj)
-* [`honeysql`](https://github.com/seancorfield/honeysql/blob/develop/build.clj)
-* [`next.jdbc`](https://github.com/seancorfield/next-jdbc/blob/develop/build.clj)
 
 # License
 
