@@ -354,7 +354,7 @@
 (defn test-watch "Run the tests and watch. The kaocha cloverage plugin cannot be used here." [opts]
   (-> opts
       (print-doc #'test-watch)
-      (run-task [:test/kaocha-watch])))
+      (run-task [:test/watch])))
 
 (defn eastwood "Run Eastwood." [opts]
   (-> opts
