@@ -349,7 +349,7 @@
 (defn test "Run the tests. The kaocha cloverage plugin will be triggered if set in `tests.edn`." [opts]
   (-> opts
       (print-doc #'test)
-      (run-task [:test/kaocha])))
+      (run-task [:test/run])))
 
 (defn test-watch "Run the tests and watch. The kaocha cloverage plugin cannot be used here." [opts]
   (-> opts
